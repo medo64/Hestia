@@ -1,0 +1,4 @@
+PROJECT_NAME:           Hestia
+PROJECT_ENTRYPOINT:     src/Hestia/Hestia.csproj
+PROJECT_RUNTIMES:       current linux-x64 linux-musl-x64
+RUN_USE_SUDO:           true

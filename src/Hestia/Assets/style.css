@@ -1,0 +1,72 @@
+:root {
+    --font-family: sans-serif;
+    --font-mono-family: monospace;
+    --font-size-major: 16pt;
+    --font-size-minor: 13pt;
+}
+
+@media (prefers-color-scheme: light) {
+    :root {
+        --main-back-color: #cee;
+        --main-fore-color: #244;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --main-back-color: #477;
+        --main-fore-color: #4cc;
+    }
+}
+
+html {
+    overflow-y: scroll;
+    font-family: var(--font-family);
+    font-size: var(--font-size);
+}
+
+body {
+    margin: 0;
+    padding: 1.25em;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    background-color: var(--main-back-color);
+    color: var(--main-fore-color);
+}
+
+form {
+    margin: 1.25em;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+form * {
+    font-size: var(--font-size-major);
+    text-align: center;
+    margin: 0.25em;
+    padding: 0.25em 0.75em;
+}
+
+div {
+    text-align: center;
+}
+
+div h2 {
+    font-size: var(--font-size-major);
+    font-weight: bold;
+    margin: 0;
+}
+
+div ul {
+    margin: 0;
+    padding: 0;
+}
+
+div ul li {
+    font-size: var(--font-size-minor);
+    list-style-type: none;
+}
