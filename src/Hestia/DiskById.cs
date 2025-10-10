@@ -55,25 +55,11 @@ internal class DiskById : IEnumerable<DiskInfo> {
         Disks = disks;
     }
 
-    private IList<DiskInfo> Disks;
+    private readonly IList<DiskInfo> Disks;
 
     private string GetLuksUuidViaLuksDump(string path) {
-        var process = new Process {
-            StartInfo = new ProcessStartInfo {
-                FileName = "cryptsetup",
-                Arguments = $"luksDump \"{path}\"",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            }
-        };
-
-        process.Start();
-        process.WaitForExit();
-        if (process.ExitCode == 0) {
-            var output = process.StandardOutput.ReadToEnd();
-            foreach (var line in output.Split('\n')) {
+        if (CryptSetupCommand.LuksDump(path, out var outLines, out var _) == 0) {
+            foreach (var line in outLines) {
                 if (line.Trim().StartsWith("UUID:")) {
                     var parts = line.Split(':', 2);
                     if (parts.Length == 2) {
@@ -86,24 +72,10 @@ internal class DiskById : IEnumerable<DiskInfo> {
     }
 
     private string GetLuksUuidViaDmSetup(string path) {
-        var process = new Process {
-            StartInfo = new ProcessStartInfo {
-                FileName = "dmsetup",
-                Arguments = $"info -c --noheadings -o uuid \"{path}\"",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            }
-        };
-
-        process.Start();
-        process.WaitForExit();
-        if (process.ExitCode == 0) {
-            var output = process.StandardOutput.ReadToEnd();
-            var parts = output.Split('-');
-            if (parts.Length > 2) {
-                return parts[2].Trim();
+        if (DmSetupCommand.InfoNoHeadingsUuid(path, out var outLines, out var _) == 0) {
+            if (outLines.Length == 1) {
+                var parts = outLines[0].Split('-');
+                if (parts.Length > 2) { return parts[2].Trim(); }
             }
         }
         return "";
