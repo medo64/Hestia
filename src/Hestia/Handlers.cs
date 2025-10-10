@@ -90,20 +90,21 @@ internal static class Handlers {
         sb.AppendLine($"<meta http-equiv='refresh' content='3; URL={request.UrlReferrer}' />");
         sb.AppendLine("</head>");
         sb.AppendLine("<body>");
-        sb.AppendLine("<div>");
 
         // decrypt all locked disks
         var disks = new DiskById();
         foreach (var disk in disks) {
             if (!disk.IsUnlocked) {
-                if (CryptSetupCommand.LuksOpen(disk.DiskPath, password, out var outLines, out var errLines) != 0) {
-                    sb.Append("<div>");
+                sb.Append("<div>");
+                if (CryptSetupCommand.LuksOpen(disk.DiskPath, password, out var _, out var luksErrLines) == 0) {
+                    sb.Append($"<h3>{disk.DiskPath} Decrypted</h3>");
+                } else {
                     sb.Append($"<h3>{disk.DiskPath}</h3>");
                     sb.Append("<pre>");
-                    foreach (var line in errLines) { sb.AppendLine(WebUtility.HtmlEncode(line)); }
+                    foreach (var line in luksErrLines) { sb.AppendLine(WebUtility.HtmlEncode(line)); }
                     sb.Append("</pre>");
-                    sb.Append("</div>");
                 }
+                sb.Append("</div>");
             }
         }
 
@@ -114,12 +115,26 @@ internal static class Handlers {
             if (!disk.IsUnlocked) { allUnlocked = false; }
         }
 
+        sb.AppendLine("<div>");
         if (allUnlocked) {
             sb.AppendLine("<h2>All disks unlocked</h2>");
         } else {
             sb.AppendLine("<h2>Some disks still locked</h2>");
         }
         sb.AppendLine("</div>");
+
+        // restart docker
+        sb.Append("<div>");
+        if (SystemCtlCommand.Restart("docker", out var _, out var dockerErrLines) == 0) {
+            sb.Append($"<h3>Docker Restarted</h3>");
+        } else {
+            sb.Append($"<h3>Docker Restart</h3>");
+            sb.Append("<pre>");
+            foreach (var line in dockerErrLines) { sb.AppendLine(WebUtility.HtmlEncode(line)); }
+            sb.Append("</pre>");
+        }
+        sb.Append("</div>");
+
         sb.AppendLine("</body>");
         sb.AppendLine("</html>");
 
