@@ -18,7 +18,7 @@ internal static class App {
             Log.Trace($"Received request for {context.Request.Url?.AbsolutePath}");
 
             if ("/".Equals(context.Request.Url?.AbsolutePath, StringComparison.OrdinalIgnoreCase)) {
-                await Handlers.Main(context.Response);
+                await Handlers.Default(context.Response);
             } else if ("/info".Equals(context.Request.Url?.AbsolutePath, StringComparison.OrdinalIgnoreCase)) {
                 await Handlers.Info(context.Response);
             } else if ("/unlock".Equals(context.Request.Url?.AbsolutePath, StringComparison.OrdinalIgnoreCase)) {

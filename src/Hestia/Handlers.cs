@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 internal static class Handlers {
 
-    public static async Task Main(HttpListenerResponse response) {
+    public static async Task Default(HttpListenerResponse response) {
         Log.Debug($"Processing root request");
 
         var disks = new DiskById();
@@ -29,24 +29,26 @@ internal static class Handlers {
         // otherwise show unlocking dialog
         var sb = new StringBuilder();
         sb.AppendLine("<html>");
-        sb.AppendLine("  <head>");
-        sb.AppendLine($"    <title>{Environment.MachineName}</title>");
-        sb.AppendLine("    <link rel='stylesheet' href='/style.css'>");
-        sb.AppendLine("  </head>");
-        sb.AppendLine("  <body>");
-        sb.AppendLine("    <div>");
-        sb.AppendLine("      <h2>The following disks are still locked</h2>");
-        sb.AppendLine("      <ul>");
+        sb.AppendLine("<head>");
+        sb.AppendLine($"<title>{Environment.MachineName}</title>");
+        sb.AppendLine("<link rel='stylesheet' href='/style.css'>");
+        sb.AppendLine("</head>");
+        sb.AppendLine("<body>");
+        sb.AppendLine("<div>");
+        sb.AppendLine("<h2>The following disks are still locked</h2>");
+        sb.AppendLine("<table>");
         foreach (var disk in disks) {
-            if (!disk.IsUnlocked) { sb.AppendLine($"        <li><code>{disk.DiskPath}</code></li>"); }
+            if (!disk.IsUnlocked) { sb.AppendLine($"<tr><td><code>{disk.DiskPath}</code></td></tr>"); }
         }
-        sb.AppendLine("      </ul>");
-        sb.AppendLine("    </div>");
-        sb.AppendLine("    <form method='POST' action='/unlock'>");
-        sb.AppendLine("      <input type='password' name='password' placeholder='Password'>");
-        sb.AppendLine("      <button type='submit'>Unlock</button>");
-        sb.AppendLine("    </form>");
-        sb.AppendLine("  </body>");
+        sb.AppendLine("</table>");
+        sb.AppendLine("</div>");
+        sb.AppendLine("<div>");
+        sb.AppendLine("<form method='POST' action='/unlock'>");
+        sb.AppendLine("<input type='password' name='password' placeholder='Password'>");
+        sb.AppendLine("<button type='submit'>Unlock</button>");
+        sb.AppendLine("</form>");
+        sb.AppendLine("</div>");
+        sb.AppendLine("</body>");
         sb.AppendLine("</html>");
 
         var buffer = Encoding.UTF8.GetBytes(sb.ToString());
@@ -90,20 +92,20 @@ internal static class Handlers {
 
         var sb = new StringBuilder();
         sb.AppendLine("<html>");
-        sb.AppendLine("  <head>");
-        sb.AppendLine($"    <title>{Environment.MachineName}</title>");
-        sb.AppendLine("    <link rel='stylesheet' href='/style.css'>");
-        sb.AppendLine($"    <meta http-equiv='refresh' content='3; URL={request.UrlReferrer}' />");
-        sb.AppendLine("  </head>");
-        sb.AppendLine("  <body>");
-        sb.AppendLine("    <div>");
+        sb.AppendLine("<head>");
+        sb.AppendLine($"<title>{Environment.MachineName}</title>");
+        sb.AppendLine("<link rel='stylesheet' href='/style.css'>");
+        sb.AppendLine($"<meta http-equiv='refresh' content='3; URL={request.UrlReferrer}' />");
+        sb.AppendLine("</head>");
+        sb.AppendLine("<body>");
+        sb.AppendLine("<div>");
         if (allUnlocked) {
-            sb.AppendLine("      <h2>All disks unlocked</h2>");
+            sb.AppendLine("<h2>All disks unlocked</h2>");
         } else {
-            sb.AppendLine("      <h2>Some disks still locked</h2>");
+            sb.AppendLine("<h2>Some disks still locked</h2>");
         }
-        sb.AppendLine("    </div>");
-        sb.AppendLine("  </body>");
+        sb.AppendLine("</div>");
+        sb.AppendLine("</body>");
         sb.AppendLine("</html>");
 
         var buffer = Encoding.UTF8.GetBytes(sb.ToString());
@@ -117,54 +119,60 @@ internal static class Handlers {
 
         var sb = new StringBuilder();
         sb.AppendLine("<html>");
-        sb.AppendLine("  <head>");
-        sb.AppendLine($"    <title>{Environment.MachineName}: Info</title>");
-        sb.AppendLine("    <link rel='stylesheet' href='/style.css'>");
-        sb.AppendLine("  </head>");
+        sb.AppendLine("<head>");
+        sb.AppendLine($"<title>{Environment.MachineName}: Info</title>");
+        sb.AppendLine("<link rel='stylesheet' href='/style.css'>");
+        sb.AppendLine("</head>");
         sb.AppendLine("<body>");
 
         {
-            sb.AppendLine("    <h2>Encrypted Disks</h2>");
-            sb.AppendLine("    <ul>");
+            sb.AppendLine("<div>");
+            sb.AppendLine("<h2>Encrypted Disks</h2>");
+            sb.AppendLine("<table>");
+            sb.AppendLine("<tr><th>Encrypted Disk ID</th><th>Decrypted Disk ID</th><th>LUKS UUID</th></tr>");
             var hadAny = false;
             var allUnlocked = true;
             foreach (var disk in disks) {
                 if (!disk.IsUnlocked) {
-                    sb.AppendLine($"      <li><code>{disk.DiskPath}</code><br><code>{disk.LuksUuid}</code></li>");
+                    sb.AppendLine($"<tr><td><code>{disk.DiskPath}</code></td><td></td><td><code>{disk.LuksUuid}</code></td></tr>");
                     allUnlocked = false;
                 } else {
-                    sb.AppendLine($"      <li><code>{disk.DiskPath}</code><br><code>{disk.MapperPath}</code><br><code>{disk.LuksUuid}</code></li>");
+                    sb.AppendLine($"<tr><td><code>{disk.DiskPath}</code></td><td><code>{disk.MapperPath}</code></td><td><code>{disk.LuksUuid}</code></td></tr>");
 
                 }
                 hadAny = true;
             }
-            if (!hadAny) { sb.AppendLine("      <li style='list-style-type: none;'><em>No encrypted disks found</em></li>"); }
-            if (!allUnlocked) { sb.AppendLine("      <li style='list-style-type: none;'><em>Some disks are still encrypted</em></li>"); }
-            sb.AppendLine("    </ul>");
+            if (!hadAny) { sb.AppendLine("<tr><td><em>No encrypted disks found</em></td></tr>"); }
+            if (!allUnlocked) { sb.AppendLine("<tr><td><em><strong>Some disks are still encrypted</strong></em></td></tr>"); }
+            sb.AppendLine("</table>");
+            sb.AppendLine("</div>");
         }
 
         {
+            sb.AppendLine("<div>");
             if (Docker.IsInstalled()) {
-                sb.AppendLine("    <h2>Docker Containers</h2>");
-                sb.AppendLine("    <ul>");
+                sb.AppendLine("<h2>Docker Containers</h2>");
+                sb.AppendLine("<table>");
+                sb.AppendLine("<tr><th>Container Name</th></tr>");
                 if (Docker.IsRunning()) {
                     var hadAny = false;
                     foreach (var containerName in Docker.GetRunningContainerNames()) {
-                        sb.AppendLine($"      <li><code>{containerName}</code></li>");
+                        sb.AppendLine($"<tr><td><code>{containerName}</code></td></tr>");
                         hadAny = true;
                     }
-                    if (!hadAny) { sb.AppendLine("      <li style='list-style-type: none;'><em>No running containers</em></li>"); }
+                    if (!hadAny) { sb.AppendLine("<tr><td><em>No running containers</em></td></tr>"); }
                 } else {
-                    sb.AppendLine("      <li style='list-style-type: none;'><em>Docker not running</em></li>");
+                    sb.AppendLine("<tr><td><em><strong>Docker not running</strong></em></td></tr>");
                 }
-                if (Docker.IsEnabled()) { sb.AppendLine("      <li style='list-style-type: none;'><em>Docker is enabled (shouldn't be)</em></li>"); }
-                sb.AppendLine("    </ul>");
+                if (Docker.IsEnabled()) { sb.AppendLine("<tr><td><em>Docker is enabled (shouldn't be)</em></td></tr>"); }
+                sb.AppendLine("</table>");
             } else {
-                sb.AppendLine("    <h2>Docker Not Installed</h2>");
+                sb.AppendLine("<h2>Docker Not Installed</h2>");
             }
+            sb.AppendLine("</div>");
         }
 
-        sb.AppendLine("  </body>");
+        sb.AppendLine("</body>");
         sb.AppendLine("</html>");
 
         var buffer = Encoding.UTF8.GetBytes(sb.ToString());
