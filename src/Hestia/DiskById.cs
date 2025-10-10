@@ -2,12 +2,18 @@ namespace Hestia;
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 
 internal class DiskById : IEnumerable<DiskInfo> {
 
     public DiskById() {
+        Refresh();
+
+        //TODO: Remove - added for testing
+        Disks.Add(new DiskInfo("/dev/disk/by-id/test", "", "TEST"));
+    }
+
+    public void Refresh() {
         var idPaths = new List<string>();
         foreach (var file in Directory.EnumerateFiles("/dev/disk/by-id/")) {
             var path = Path.GetFullPath(file);
@@ -33,7 +39,7 @@ internal class DiskById : IEnumerable<DiskInfo> {
 
         var luksUuidTracker = new Dictionary<string, string>();
 
-        var disks = new List<DiskInfo>();
+        Disks.Clear();
         foreach (var diskPath in idPaths) {
             var luksUuid = GetLuksUuidViaLuksDump(diskPath);
             if (string.IsNullOrWhiteSpace(luksUuid)) { continue; }
@@ -44,18 +50,13 @@ internal class DiskById : IEnumerable<DiskInfo> {
             } else {
                 info = new DiskInfo(diskPath, "", luksUuid);
             }
-            disks.Add(info);
+            Disks.Add(info);
             Log.Debug($"{info.DiskPath} -> {info.LuksUuid} -> {info.MapperPath}");
             luksUuidTracker.Add(luksUuid, diskPath);
         }
-
-        //TODO: Remove - added for testing
-        disks.Add(new DiskInfo("/dev/disk/by-id/test", "", "TEST"));
-
-        Disks = disks;
     }
 
-    private readonly IList<DiskInfo> Disks;
+    private readonly IList<DiskInfo> Disks = [];
 
     private string GetLuksUuidViaLuksDump(string path) {
         if (CryptSetupCommand.LuksDump(path, out var outLines, out var _) == 0) {

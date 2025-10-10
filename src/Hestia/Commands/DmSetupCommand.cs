@@ -4,11 +4,11 @@ using System.Diagnostics;
 
 internal static class DmSetupCommand {
 
-    public static int InfoNoHeadingsUuid(string path, out string[] standardOutputLines, out string[] standardErrorLines) {
+    public static int InfoNoHeadingsUuid(string mapperPath, out string[] standardOutputLines, out string[] standardErrorLines) {
         var process = new Process {
             StartInfo = new ProcessStartInfo {
                 FileName = "dmsetup",
-                Arguments = $"info -c --noheadings -o uuid \"{path}\"",
+                Arguments = $"info -c --noheadings -o uuid \"{mapperPath}\"",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,

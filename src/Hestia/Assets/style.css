@@ -1,8 +1,7 @@
 :root {
     --font-family: sans-serif;
     --font-mono-family: monospace;
-    --font-size-major: 16pt;
-    --font-size-minor: 13pt;
+    --font-size: 13pt;
 }
 
 @media (prefers-color-scheme: light) {
@@ -10,6 +9,7 @@
         --main-back-color: #cee;
         --main-input-color: #ffa;
         --main-fore-color: #244;
+        --main-error-color: #e44;
     }
 }
 
@@ -18,6 +18,7 @@
         --main-back-color: #477;
         --main-input-color: #770;
         --main-fore-color: #4cc;
+        --main-error-color: #c44;
     }
 }
 
@@ -39,7 +40,7 @@ body {
 form {
     margin: 1.25em;
     * {
-        font-size: var(--font-size-major);
+        font-size: calc(var(--font-size) * 1.2);
         text-align: center;
         margin: 0.25em;
         padding: 0.25em 0.75em;
@@ -58,9 +59,21 @@ div {
 }
 
 div h2 {
-    font-size: var(--font-size-major);
+    font-size: calc(var(--font-size) * 1.2);
     font-weight: bold;
     margin: 0.2em 0 0.2em 0;
+}
+
+div h3 {
+    font-size: calc(var(--font-size) * 1.1);
+    font-weight: bold;
+    margin: 0.2em 0 0.2em 0;
+}
+
+pre {
+    color: var(--main-error-color);
+    margin: 0;
+    text-align: left;
 }
 
 table {

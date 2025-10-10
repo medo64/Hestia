@@ -82,14 +82,6 @@ internal static class Handlers {
             return;
         }
 
-        //TODO: Unlock
-
-        var disks = new DiskById();
-        var allUnlocked = true;
-        foreach (var disk in disks) {
-            if (!disk.IsUnlocked) { allUnlocked = false; }
-        }
-
         var sb = new StringBuilder();
         sb.AppendLine("<html>");
         sb.AppendLine("<head>");
@@ -99,6 +91,29 @@ internal static class Handlers {
         sb.AppendLine("</head>");
         sb.AppendLine("<body>");
         sb.AppendLine("<div>");
+
+        // decrypt all locked disks
+        var disks = new DiskById();
+        foreach (var disk in disks) {
+            if (!disk.IsUnlocked) {
+                if (CryptSetupCommand.LuksOpen(disk.DiskPath, password, out var outLines, out var errLines) != 0) {
+                    sb.Append("<div>");
+                    sb.Append($"<h3>{disk.DiskPath}</h3>");
+                    sb.Append("<pre>");
+                    foreach (var line in errLines) { sb.AppendLine(WebUtility.HtmlEncode(line)); }
+                    sb.Append("</pre>");
+                    sb.Append("</div>");
+                }
+            }
+        }
+
+        // check if all disks are now unlocked
+        disks.Refresh();
+        var allUnlocked = true;
+        foreach (var disk in disks) {
+            if (!disk.IsUnlocked) { allUnlocked = false; }
+        }
+
         if (allUnlocked) {
             sb.AppendLine("<h2>All disks unlocked</h2>");
         } else {
