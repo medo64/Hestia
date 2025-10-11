@@ -123,6 +123,23 @@ internal static class Handlers {
         }
         sb.AppendLine("</div>");
 
+        // import zfs pools
+        var poolsToImport = Zfs.GetPoolsForImport();
+        if (poolsToImport.Length > 0) {
+            sb.Append("<div>");
+            foreach (var poolName in poolsToImport) {
+                if (ZPoolCommand.Import(poolName, out var _, out var luksErrLines) == 0) {
+                    sb.Append($"<h3>{poolName} Imported</h3>");
+                } else {
+                    sb.Append($"<h3>{poolName}</h3>");
+                    sb.Append("<pre>");
+                    foreach (var line in luksErrLines) { sb.AppendLine(WebUtility.HtmlEncode(line)); }
+                    sb.Append("</pre>");
+                }
+                sb.Append("</div>");
+            }
+        }
+
         // restart docker
         sb.Append("<div>");
         if (SystemCtlCommand.Restart("docker", out var _, out var dockerErrLines) == 0) {
