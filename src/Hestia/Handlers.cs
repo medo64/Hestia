@@ -1,6 +1,7 @@
 namespace Hestia;
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Reflection;
@@ -59,6 +60,7 @@ internal static class Handlers {
 
     public static async Task Unlock(HttpListenerRequest request, HttpListenerResponse response) {
         Log.Debug($"Processing unlock request");
+        var sw = Stopwatch.StartNew();
 
         if (request.HttpMethod != "POST") {
             response.StatusCode = (int)HttpStatusCode.MethodNotAllowed;
@@ -89,11 +91,14 @@ internal static class Handlers {
         sb.AppendLine("<head>");
         sb.AppendLine($"<title>{Environment.MachineName}</title>");
         sb.AppendLine("<link rel='stylesheet' href='/style.css'>");
-        sb.AppendLine($"<meta http-equiv='refresh' content='3; URL={request.UrlReferrer}' />");
+        sb.AppendLine($"<meta http-equiv='refresh' content='7; URL={request.UrlReferrer}' />");
         sb.AppendLine("</head>");
         sb.AppendLine("<body>");
 
         // decrypt all locked disks
+        var swDecrypt = Stopwatch.StartNew();
+        sb.Append("<div>");
+        sb.Append("<table>");
         var disks = new DiskById();
         Parallel.ForEach(disks, disk => {
             Log.Debug($"Decrypting disk {disk.DiskPath}");
@@ -101,23 +106,28 @@ internal static class Handlers {
                 if (CryptSetupCommand.LuksOpen(disk.DiskPath, password, out var _, out var luksErrLines) == 0) {
                     Log.Info($"Decrypted disk {disk.DiskPath}");
                     lock (sbLock) {
-                        sb.Append("<div>");
-                        sb.Append($"<h3>{disk.DiskPath} Decrypted</h3>");
-                        sb.Append("</div>");
+                        sb.Append($"<tr><td><strong>{disk.DiskPath}</strong></td><td>Decrypted</td></tr>");
                     }
                 } else {
                     Log.Error($"Cannot decrypt disk {disk.DiskPath}");
                     lock (sbLock) {
-                        sb.Append("<div>");
-                        sb.Append($"<h3>{disk.DiskPath}</h3>");
+                        sb.Append("<tr>");
+                        sb.Append($"<td><strong>{disk.DiskPath}</strong></td>");
+                        sb.Append("<td>");
                         sb.Append("<pre>");
-                        foreach (var line in luksErrLines) { sb.AppendLine(WebUtility.HtmlEncode(line)); }
+                        foreach (var line in luksErrLines) {
+                            sb.AppendLine(WebUtility.HtmlEncode(line));
+                        }
                         sb.Append("</pre>");
-                        sb.Append("</div>");
+                        sb.Append("</td>");
+                        sb.Append("</tr>");
                     }
                 }
             }
         });
+        sb.Append("</table>");
+        sb.Append("</div>");
+        Log.Debug($"Disk decryption took {swDecrypt.Elapsed.TotalMilliseconds:#,##0.0} ms");
 
         // check if all disks are now unlocked
         disks.Refresh();
@@ -137,11 +147,15 @@ internal static class Handlers {
         // import zfs pools
         var poolsToImport = Zfs.GetPoolsForImport();
         if (poolsToImport.Length > 0) {
+            var swImport = Stopwatch.StartNew();
+            sb.Append("<div>");
+            sb.Append("<table>");
             Parallel.ForEach(poolsToImport, poolName => {
                 Log.Debug($"Importing ZFS pool {poolName}");
-                if (ZPoolCommand.Import(poolName, out var _, out var luksErrLines) == 0) {
+                if (ZPoolCommand.Import(poolName, out var _, out var zfsErrLines) == 0) {
                     Log.Info($"Imported ZFS pool {poolName}");
                     lock (sbLock) {
+                        sb.Append($"<tr><td><strong>{poolName}</strong></td><td>Imported</td></tr>");
                         sb.Append("<div>");
                         sb.Append($"<h3>{poolName} Imported</h3>");
                         sb.Append("</div>");
@@ -149,18 +163,26 @@ internal static class Handlers {
                 } else {
                     Log.Error($"Cannot import ZFS pool {poolName}");
                     lock (sbLock) {
-                        sb.Append("<div>");
-                        sb.Append($"<h3>{poolName}</h3>");
+                        sb.Append("<tr>");
+                        sb.Append($"<td><strong>{poolName}</strong></td>");
+                        sb.Append("<td>");
                         sb.Append("<pre>");
-                        foreach (var line in luksErrLines) { sb.AppendLine(WebUtility.HtmlEncode(line)); }
+                        foreach (var line in zfsErrLines) {
+                            sb.AppendLine(WebUtility.HtmlEncode(line));
+                        }
                         sb.Append("</pre>");
-                        sb.Append("</div>");
+                        sb.Append("</td>");
+                        sb.Append("</tr>");
                     }
                 }
             });
+            sb.Append("</table>");
+            sb.Append("</div>");
+            Log.Debug($"ZFS import took {swImport.Elapsed.TotalMilliseconds:#,##0.0} ms");
         }
 
         // restart docker
+        var swDocker = Stopwatch.StartNew();
         sb.Append("<div>");
         if (SystemCtlCommand.Restart("docker", out var _, out var dockerErrLines) == 0) {
             sb.Append($"<h3>Docker Restarted</h3>");
@@ -171,9 +193,12 @@ internal static class Handlers {
             sb.Append("</pre>");
         }
         sb.Append("</div>");
+        Log.Debug($"Docker restart took {swDocker.Elapsed.TotalMilliseconds:#,##0.0} ms");
 
         sb.AppendLine("</body>");
         sb.AppendLine("</html>");
+
+        Log.Debug($"Response took {sw.Elapsed.TotalMilliseconds:#,##0.0} ms");
 
         var buffer = Encoding.UTF8.GetBytes(sb.ToString());
         response.ContentLength64 = buffer.Length;

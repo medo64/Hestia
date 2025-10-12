@@ -83,6 +83,7 @@ table {
     td, th {
         padding: 0.2em 1em;
         white-space: nowrap;
+        vertical-align: top;
     }
     th {
         text-align: left;
