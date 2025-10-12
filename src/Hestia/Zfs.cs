@@ -8,9 +8,9 @@ internal static class Zfs {
         if (ZPoolCommand.Import(out var stdOut, out var _) == 0) {
             var pools = new List<string>();
             foreach (var line in stdOut) {
-                line.Trim();
-                if (line.StartsWith("pool: ")) {
-                    var poolName = line["pool: ".Length..].Trim();
+                var trimmedLine = line.Trim();
+                if (trimmedLine.StartsWith("pool: ")) {
+                    var poolName = trimmedLine["pool: ".Length..].Trim();
                     pools.Add(poolName);
                 }
             }
