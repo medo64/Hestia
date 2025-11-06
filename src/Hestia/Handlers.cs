@@ -21,9 +21,13 @@ internal static class Handlers {
 
         // if all disks are unlocked, just redirect to the target url
         if (allUnlocked) {
-            Log.Info($"All disks unlocked, redirecting to {Settings.RedirectUrl}");
-            response.StatusCode = (int)HttpStatusCode.TemporaryRedirect;
-            response.RedirectLocation = Settings.RedirectUrl;
+            if (Settings.RedirectUrl.Length > 0) {
+                Log.Info($"All disks unlocked, redirecting to {Settings.RedirectUrl}");
+                response.StatusCode = (int)HttpStatusCode.TemporaryRedirect;
+                response.RedirectLocation = Settings.RedirectUrl;
+            } else {
+                await Info(response);
+            }
             return;
         }
 
