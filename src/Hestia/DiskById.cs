@@ -75,8 +75,10 @@ internal class DiskById : IEnumerable<DiskInfo> {
     private string GetLuksUuidViaDmSetup(string path) {
         if (DmSetupCommand.InfoNoHeadingsUuid(path, out var outLines, out var _) == 0) {
             if (outLines.Length == 1) {
-                var parts = outLines[0].Split('-');
-                if (parts.Length > 2) { return parts[2].Trim(); }
+                if (outLines[0].StartsWith("CRYPT-LUKS2", System.StringComparison.Ordinal)) {
+                    var parts = outLines[0].Split('-');
+                    if (parts.Length > 2) { return parts[2].Trim(); }
+                }
             }
         }
         return "";
