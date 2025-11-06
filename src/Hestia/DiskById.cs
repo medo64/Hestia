@@ -9,8 +9,9 @@ internal class DiskById : IEnumerable<DiskInfo> {
     public DiskById() {
         Refresh();
 
-        //TODO: Remove - added for testing
+#if DEBUG
         Disks.Add(new DiskInfo("/dev/disk/by-id/test", "", "TEST"));
+#endif
     }
 
     public void Refresh() {
