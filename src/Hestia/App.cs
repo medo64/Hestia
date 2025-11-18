@@ -3,15 +3,18 @@
 using System;
 using System.Net;
 using System.Threading.Tasks;
+using Medo.Configuration;
 
 internal static class App {
 
     public static async Task Main(string[] args) {
+        Config.FileName = "/etc/hestia.conf";
+
         var listener = new HttpListener();
-        listener.Prefixes.Add(Settings.Url);
+        listener.Prefixes.Add(Settings.ListenPrefix);
         listener.Start();
 
-        Log.Info($"Web server started on {Settings.Url}");
+        Log.Info($"Web server started on {Settings.ListenPrefix}");
 
         while (true) {
             var context = await listener.GetContextAsync();

@@ -1,13 +1,27 @@
 namespace Hestia;
 
+using Medo.Configuration;
+
 internal static class Settings {
 
+    public static string ListenPrefix {
+        get {
 #if DEBUG
-    public static string Url => "http://*:8072/";
-    public static string RedirectUrl => "https://medo64.com/";
+            return Config.Read("Listen", "http://*:8072/");
 #else
-    public static string Url => "http://*:80/";
-    public static string RedirectUrl => "";
+            return Config.Read("Listen", "http://*:80/");
 #endif
+        }
+    }
+
+    public static string RedirectUrl {
+        get {
+#if DEBUG
+            return Config.Read("Redirect", "https://medo64.com/");
+#else
+            return Config.Read("Redirect", "");
+#endif
+        }
+    }
 
 }
