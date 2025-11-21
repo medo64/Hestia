@@ -103,11 +103,14 @@ internal static class Handlers {
         var swDecrypt = Stopwatch.StartNew();
         sb.Append("<div>");
         sb.Append("<table>");
+
+        var anyUnlocked = false;
         var disks = new DiskById();
         foreach (var disk in disks) {
             Log.Debug($"Decrypting disk {disk.DiskPath}");
             if (!disk.IsUnlocked) {
                 if (CryptSetupCommand.LuksOpen(disk.DiskPath, password, out var _, out var luksErrLines) == 0) {
+                    anyUnlocked = true;
                     Log.Info($"Decrypted disk {disk.DiskPath}");
                     lock (sbLock) {
                         sb.Append($"<tr><td><strong>{disk.DiskPath}</strong></td><td>Decrypted</td></tr>");
@@ -128,7 +131,8 @@ internal static class Handlers {
                     }
                 }
             }
-        };
+        }
+        ;
         sb.Append("</table>");
         sb.Append("</div>");
         Log.Debug($"Disk decryption took {swDecrypt.Elapsed.TotalMilliseconds:#,##0.0} ms");
@@ -148,56 +152,58 @@ internal static class Handlers {
         }
         sb.AppendLine("</div>");
 
-        // import zfs pools
-        var poolsToImport = Zfs.GetPoolsForImport();
-        if (poolsToImport.Length > 0) {
-            var swImport = Stopwatch.StartNew();
-            sb.Append("<div>");
-            sb.Append("<table>");
-            Parallel.ForEach(poolsToImport, poolName => {
-                Log.Debug($"Importing ZFS pool {poolName}");
-                if (ZPoolCommand.Import(poolName, out var _, out var zfsErrLines) == 0) {
-                    Log.Info($"Imported ZFS pool {poolName}");
-                    lock (sbLock) {
-                        sb.Append($"<tr><td><strong>{poolName}</strong></td><td>Imported</td></tr>");
-                        sb.Append("<div>");
-                        sb.Append($"<h3>{poolName} Imported</h3>");
-                        sb.Append("</div>");
-                    }
-                } else {
-                    Log.Error($"Cannot import ZFS pool {poolName}");
-                    lock (sbLock) {
-                        sb.Append("<tr>");
-                        sb.Append($"<td><strong>{poolName}</strong></td>");
-                        sb.Append("<td>");
-                        sb.Append("<pre>");
-                        foreach (var line in zfsErrLines) {
-                            sb.AppendLine(WebUtility.HtmlEncode(line));
+        if (anyUnlocked) {
+            // import zfs pools
+            var poolsToImport = Zfs.GetPoolsForImport();
+            if (poolsToImport.Length > 0) {
+                var swImport = Stopwatch.StartNew();
+                sb.Append("<div>");
+                sb.Append("<table>");
+                Parallel.ForEach(poolsToImport, poolName => {
+                    Log.Debug($"Importing ZFS pool {poolName}");
+                    if (ZPoolCommand.Import(poolName, out var _, out var zfsErrLines) == 0) {
+                        Log.Info($"Imported ZFS pool {poolName}");
+                        lock (sbLock) {
+                            sb.Append($"<tr><td><strong>{poolName}</strong></td><td>Imported</td></tr>");
+                            sb.Append("<div>");
+                            sb.Append($"<h3>{poolName} Imported</h3>");
+                            sb.Append("</div>");
                         }
-                        sb.Append("</pre>");
-                        sb.Append("</td>");
-                        sb.Append("</tr>");
+                    } else {
+                        Log.Error($"Cannot import ZFS pool {poolName}");
+                        lock (sbLock) {
+                            sb.Append("<tr>");
+                            sb.Append($"<td><strong>{poolName}</strong></td>");
+                            sb.Append("<td>");
+                            sb.Append("<pre>");
+                            foreach (var line in zfsErrLines) {
+                                sb.AppendLine(WebUtility.HtmlEncode(line));
+                            }
+                            sb.Append("</pre>");
+                            sb.Append("</td>");
+                            sb.Append("</tr>");
+                        }
                     }
-                }
-            });
-            sb.Append("</table>");
-            sb.Append("</div>");
-            Log.Debug($"ZFS import took {swImport.Elapsed.TotalMilliseconds:#,##0.0} ms");
-        }
+                });
+                sb.Append("</table>");
+                sb.Append("</div>");
+                Log.Debug($"ZFS import took {swImport.Elapsed.TotalMilliseconds:#,##0.0} ms");
+            }
 
-        // restart docker
-        var swDocker = Stopwatch.StartNew();
-        sb.Append("<div>");
-        if (SystemCtlCommand.Restart("docker", out var _, out var dockerErrLines) == 0) {
-            sb.Append($"<h3>Docker Restarted</h3>");
-        } else {
-            sb.Append($"<h3>Docker Restart</h3>");
-            sb.Append("<pre>");
-            foreach (var line in dockerErrLines) { sb.AppendLine(WebUtility.HtmlEncode(line)); }
-            sb.Append("</pre>");
+            // restart docker
+            var swDocker = Stopwatch.StartNew();
+            sb.Append("<div>");
+            if (SystemCtlCommand.Restart("docker", out var _, out var dockerErrLines) == 0) {
+                sb.Append($"<h3>Docker Restarted</h3>");
+            } else {
+                sb.Append($"<h3>Docker Restart</h3>");
+                sb.Append("<pre>");
+                foreach (var line in dockerErrLines) { sb.AppendLine(WebUtility.HtmlEncode(line)); }
+                sb.Append("</pre>");
+            }
+            sb.Append("</div>");
+            Log.Debug($"Docker restart took {swDocker.Elapsed.TotalMilliseconds:#,##0.0} ms");
         }
-        sb.Append("</div>");
-        Log.Debug($"Docker restart took {swDocker.Elapsed.TotalMilliseconds:#,##0.0} ms");
 
         sb.AppendLine("</body>");
         sb.AppendLine("</html>");
