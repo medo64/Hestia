@@ -104,7 +104,7 @@ internal static class Handlers {
         sb.Append("<div>");
         sb.Append("<table>");
         var disks = new DiskById();
-        Parallel.ForEach(disks, disk => {
+        foreach (var disk in disks) {
             Log.Debug($"Decrypting disk {disk.DiskPath}");
             if (!disk.IsUnlocked) {
                 if (CryptSetupCommand.LuksOpen(disk.DiskPath, password, out var _, out var luksErrLines) == 0) {
@@ -128,7 +128,7 @@ internal static class Handlers {
                     }
                 }
             }
-        });
+        };
         sb.Append("</table>");
         sb.Append("</div>");
         Log.Debug($"Disk decryption took {swDecrypt.Elapsed.TotalMilliseconds:#,##0.0} ms");
