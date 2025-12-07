@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 internal static class ZPoolCommand {
 
-    public static int Import(out string[] standardOutputLines, out string[] standardErrorLines) {
+    public static int Import(OutputStore? output, out string[] standardOutputLines, out string[] standardErrorLines) {
         var process = new Process {
             StartInfo = new ProcessStartInfo {
                 FileName = "zpool",
@@ -17,6 +17,7 @@ internal static class ZPoolCommand {
         };
 
         process.Start();
+        output?.Attach(process);
         process.WaitForExit();
 
         standardOutputLines = Helpers.SplitOutIntoLines(process.StandardOutput.ReadToEnd());
@@ -24,7 +25,7 @@ internal static class ZPoolCommand {
         return process.ExitCode;
     }
 
-    public static int Import(string poolName, out string[] standardOutputLines, out string[] standardErrorLines) {
+    public static int Import(OutputStore? output, string poolName, out string[] standardOutputLines, out string[] standardErrorLines) {
         var process = new Process {
             StartInfo = new ProcessStartInfo {
                 FileName = "zpool",
@@ -37,6 +38,7 @@ internal static class ZPoolCommand {
         };
 
         process.Start();
+        output?.Attach(process);
         process.WaitForExit();
 
         standardOutputLines = Helpers.SplitOutIntoLines(process.StandardOutput.ReadToEnd());

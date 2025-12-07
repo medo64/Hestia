@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 internal static class DockerCommand {
 
-    public static int ListNames(out string[] standardOutputLines, out string[] standardErrorLines) {
+    public static int ListNames(OutputStore? output, out string[] standardOutputLines, out string[] standardErrorLines) {
         var process = new Process {
             StartInfo = new ProcessStartInfo {
                 FileName = "docker",
@@ -17,6 +17,7 @@ internal static class DockerCommand {
         };
 
         process.Start();
+        output?.Attach(process);
         process.WaitForExit();
 
         standardOutputLines = Helpers.SplitOutIntoLines(process.StandardOutput.ReadToEnd());

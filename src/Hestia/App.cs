@@ -24,6 +24,8 @@ internal static class App {
                 await Handlers.Default(context.Response);
             } else if ("/info".Equals(context.Request.Url?.AbsolutePath, StringComparison.OrdinalIgnoreCase)) {
                 await Handlers.Info(context.Response);
+            } else if ("/output".Equals(context.Request.Url?.AbsolutePath, StringComparison.OrdinalIgnoreCase)) {
+                await Handlers.Output(context.Request, context.Response);
             } else if ("/unlock".Equals(context.Request.Url?.AbsolutePath, StringComparison.OrdinalIgnoreCase)) {
                 await Handlers.Unlock(context.Request, context.Response);
             } else if ("/style.css".Equals(context.Request.Url?.AbsolutePath, StringComparison.OrdinalIgnoreCase)) {

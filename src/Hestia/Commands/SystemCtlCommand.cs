@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 internal static class SystemCtlCommand {
 
-    public static int IsActive(string serviceName, out string[] standardOutputLines, out string[] standardErrorLines) {
+    public static int IsActive(OutputStore? output, string serviceName, out string[] standardOutputLines, out string[] standardErrorLines) {
         var process = new Process {
             StartInfo = new ProcessStartInfo {
                 FileName = "systemctl",
@@ -17,6 +17,7 @@ internal static class SystemCtlCommand {
         };
 
         process.Start();
+        output?.Attach(process);
         process.WaitForExit();
 
         standardOutputLines = Helpers.SplitOutIntoLines(process.StandardOutput.ReadToEnd());
@@ -24,7 +25,7 @@ internal static class SystemCtlCommand {
         return process.ExitCode;
     }
 
-    public static int IsEnabled(string serviceName, out string[] standardOutputLines, out string[] standardErrorLines) {
+    public static int IsEnabled(OutputStore? output, string serviceName, out string[] standardOutputLines, out string[] standardErrorLines) {
         var process = new Process {
             StartInfo = new ProcessStartInfo {
                 FileName = "systemctl",
@@ -37,6 +38,7 @@ internal static class SystemCtlCommand {
         };
 
         process.Start();
+        output?.Attach(process);
         process.WaitForExit();
 
         standardOutputLines = Helpers.SplitOutIntoLines(process.StandardOutput.ReadToEnd());
@@ -44,7 +46,7 @@ internal static class SystemCtlCommand {
         return process.ExitCode;
     }
 
-    public static int Restart(string serviceName, out string[] standardOutputLines, out string[] standardErrorLines) {
+    public static int Restart(OutputStore? output, string serviceName, out string[] standardOutputLines, out string[] standardErrorLines) {
         var process = new Process {
             StartInfo = new ProcessStartInfo {
                 FileName = "systemctl",
@@ -57,6 +59,7 @@ internal static class SystemCtlCommand {
         };
 
         process.Start();
+        output?.Attach(process);
         process.WaitForExit();
 
         standardOutputLines = Helpers.SplitOutIntoLines(process.StandardOutput.ReadToEnd());
@@ -64,7 +67,7 @@ internal static class SystemCtlCommand {
         return process.ExitCode;
     }
 
-    public static int Status(string serviceName, out string[] standardOutputLines, out string[] standardErrorLines) {
+    public static int Status(OutputStore? output, string serviceName, out string[] standardOutputLines, out string[] standardErrorLines) {
         var process = new Process {
             StartInfo = new ProcessStartInfo {
                 FileName = "systemctl",
@@ -77,6 +80,7 @@ internal static class SystemCtlCommand {
         };
 
         process.Start();
+        output?.Attach(process);
         process.WaitForExit();
 
         standardOutputLines = Helpers.SplitOutIntoLines(process.StandardOutput.ReadToEnd());

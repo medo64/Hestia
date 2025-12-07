@@ -88,6 +88,9 @@ internal static class Handlers {
             return;
         }
 
+        var output = OutputStore.GetNew();
+        Log.Debug($"Using output id {output.Id}");
+
         var sb = new StringBuilder();
         var sbLock = new object();
 
@@ -109,7 +112,7 @@ internal static class Handlers {
         foreach (var disk in disks) {
             Log.Debug($"Decrypting disk {disk.DiskPath}");
             if (!disk.IsUnlocked) {
-                if (CryptSetupCommand.LuksOpen(disk.DiskPath, password, out var _, out var luksErrLines) == 0) {
+                if (CryptSetupCommand.LuksOpen(output, disk.DiskPath, password, out var _, out var luksErrLines) == 0) {
                     anyUnlocked = true;
                     Log.Info($"Decrypted disk {disk.DiskPath}");
                     lock (sbLock) {
@@ -154,14 +157,14 @@ internal static class Handlers {
 
         if (anyUnlocked) {
             // import zfs pools
-            var poolsToImport = Zfs.GetPoolsForImport();
+            var poolsToImport = Zfs.GetPoolsForImport(output);
             if (poolsToImport.Length > 0) {
                 var swImport = Stopwatch.StartNew();
                 sb.Append("<div>");
                 sb.Append("<table>");
                 Parallel.ForEach(poolsToImport, poolName => {
                     Log.Debug($"Importing ZFS pool {poolName}");
-                    if (ZPoolCommand.Import(poolName, out var _, out var zfsErrLines) == 0) {
+                    if (ZPoolCommand.Import(output, poolName, out var _, out var zfsErrLines) == 0) {
                         Log.Info($"Imported ZFS pool {poolName}");
                         lock (sbLock) {
                             sb.Append($"<tr><td><strong>{poolName}</strong></td><td>Imported</td></tr>");
@@ -193,7 +196,7 @@ internal static class Handlers {
             // restart docker
             var swDocker = Stopwatch.StartNew();
             sb.Append("<div>");
-            if (SystemCtlCommand.Restart("docker", out var _, out var dockerErrLines) == 0) {
+            if (SystemCtlCommand.Restart(output, "docker", out var _, out var dockerErrLines) == 0) {
                 sb.Append($"<h3>Docker Restarted</h3>");
             } else {
                 sb.Append($"<h3>Docker Restart</h3>");
@@ -216,8 +219,39 @@ internal static class Handlers {
         await response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
     }
 
+    public static async Task Output(HttpListenerRequest request, HttpListenerResponse response) {
+        Log.Debug($"Processing output request");
+        var sw = Stopwatch.StartNew();
+
+        if (request.HttpMethod != "GET") {
+            response.StatusCode = (int)HttpStatusCode.MethodNotAllowed;
+            return;
+        }
+
+        var id = request.QueryString["id"];
+        if (!Guid.TryParse(id, out var guid)) {
+            Log.Warning($"Cannot parse id '{id}' as GUID");
+            response.StatusCode = (int)HttpStatusCode.BadRequest;
+            return;
+        }
+
+        var output = OutputStore.GetOutput(guid);
+        if (output == null) {
+            Log.Warning($"Cannot find output for id '{id}'");
+            response.StatusCode = (int)HttpStatusCode.NotFound;
+            return;
+        }
+
+        var buffer = Encoding.UTF8.GetBytes(output.GetText());
+        response.ContentLength64 = buffer.Length;
+        response.ContentType = "text/plain";
+        await response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
+    }
+
     public static async Task Info(HttpListenerResponse response) {
         var disks = new DiskById();
+
+        var output = OutputStore.GetNew();
 
         var sb = new StringBuilder();
         sb.AppendLine("<html>");
@@ -252,13 +286,13 @@ internal static class Handlers {
 
         {
             sb.AppendLine("<div>");
-            if (Docker.IsInstalled()) {
+            if (Docker.IsInstalled(output)) {
                 sb.AppendLine("<h2>Docker Containers</h2>");
                 sb.AppendLine("<table>");
                 sb.AppendLine("<tr><th>Container Name</th></tr>");
-                if (Docker.IsRunning()) {
+                if (Docker.IsRunning(output)) {
                     var hadAny = false;
-                    foreach (var containerName in Docker.GetRunningContainerNames()) {
+                    foreach (var containerName in Docker.GetRunningContainerNames(output)) {
                         sb.AppendLine($"<tr><td><code>{containerName}</code></td></tr>");
                         hadAny = true;
                     }
@@ -266,7 +300,7 @@ internal static class Handlers {
                 } else {
                     sb.AppendLine("<tr><td><em><strong>Docker not running</strong></em></td></tr>");
                 }
-                if (Docker.IsEnabled()) { sb.AppendLine("<tr><td><em>Docker is enabled (shouldn't be)</em></td></tr>"); }
+                if (Docker.IsEnabled(output)) { sb.AppendLine("<tr><td><em>Docker is enabled (shouldn't be)</em></td></tr>"); }
                 sb.AppendLine("</table>");
             } else {
                 sb.AppendLine("<h2>Docker Not Installed</h2>");

@@ -32,7 +32,7 @@ internal class DiskById : IEnumerable<DiskInfo> {
             var path = Path.GetFullPath(file);
             var name = Path.GetFileName(file);
             if (name.StartsWith("control")) { continue; }
-            var luksUuid = GetLuksUuidViaDmSetup(path);
+            var luksUuid = GetLuksUuidViaDmSetup(output: null, path);
             if (string.IsNullOrWhiteSpace(luksUuid)) { continue; }
             Log.Trace($"{path} -> {luksUuid}");
             mapperUuidAndPath.Add(luksUuid, path);
@@ -42,7 +42,7 @@ internal class DiskById : IEnumerable<DiskInfo> {
 
         Disks.Clear();
         foreach (var diskPath in idPaths) {
-            var luksUuid = GetLuksUuidViaLuksDump(diskPath);
+            var luksUuid = GetLuksUuidViaLuksDump(output: null, diskPath);
             if (string.IsNullOrWhiteSpace(luksUuid)) { continue; }
             if (luksUuidTracker.ContainsKey(luksUuid)) { continue; }
             DiskInfo info;
@@ -59,8 +59,8 @@ internal class DiskById : IEnumerable<DiskInfo> {
 
     private readonly IList<DiskInfo> Disks = [];
 
-    private string GetLuksUuidViaLuksDump(string path) {
-        if (CryptSetupCommand.LuksDump(path, out var outLines, out var _) == 0) {
+    private string GetLuksUuidViaLuksDump(OutputStore? output, string path) {
+        if (CryptSetupCommand.LuksDump(output, path, out var outLines, out var _) == 0) {
             foreach (var line in outLines) {
                 if (line.Trim().StartsWith("UUID:")) {
                     var parts = line.Split(':', 2);
@@ -73,8 +73,8 @@ internal class DiskById : IEnumerable<DiskInfo> {
         return "";
     }
 
-    private string GetLuksUuidViaDmSetup(string path) {
-        if (DmSetupCommand.InfoNoHeadingsUuid(path, out var outLines, out var _) == 0) {
+    private string GetLuksUuidViaDmSetup(OutputStore? output, string path) {
+        if (DmSetupCommand.InfoNoHeadingsUuid(output, path, out var outLines, out var _) == 0) {
             if (outLines.Length == 1) {
                 if (outLines[0].StartsWith("CRYPT-LUKS2", System.StringComparison.Ordinal)) {
                     var parts = outLines[0].Split('-');

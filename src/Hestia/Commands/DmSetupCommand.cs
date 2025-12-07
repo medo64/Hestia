@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 internal static class DmSetupCommand {
 
-    public static int InfoNoHeadingsUuid(string mapperPath, out string[] standardOutputLines, out string[] standardErrorLines) {
+    public static int InfoNoHeadingsUuid(OutputStore? output, string mapperPath, out string[] standardOutputLines, out string[] standardErrorLines) {
         var process = new Process {
             StartInfo = new ProcessStartInfo {
                 FileName = "dmsetup",
@@ -17,6 +17,7 @@ internal static class DmSetupCommand {
         };
 
         process.Start();
+        output?.Attach(process);
         process.WaitForExit();
 
         standardOutputLines = Helpers.SplitOutIntoLines(process.StandardOutput.ReadToEnd());
