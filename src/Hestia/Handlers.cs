@@ -135,7 +135,7 @@ internal static class Handlers {
                 }
             }
         }
-        ;
+
         sb.Append("</table>");
         sb.Append("</div>");
         Log.Debug($"Disk decryption took {swDecrypt.Elapsed.TotalMilliseconds:#,##0.0} ms");

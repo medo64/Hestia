@@ -24,4 +24,10 @@ internal static class Settings {
         }
     }
 
+    public static string TmpUsbFile {
+        get {
+            return Config.Read("TmpUsbFile", "");
+        }
+    }
+
 }
