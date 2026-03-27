@@ -13,11 +13,11 @@ internal static class Log {
     }
 
     public static void Info(string message) {
-        WriteLine("INFO", message, "\x1b[36m", "\x1b[96m");
+        WriteLine("INFO ", message, "\x1b[36m", "\x1b[96m");
     }
 
     public static void Warning(string message) {
-        WriteLine("WARN", message, "\x1b[33m", "\x1b[93m");
+        WriteLine("WARN ", message, "\x1b[33m", "\x1b[93m");
     }
 
     public static void Error(string message) {
