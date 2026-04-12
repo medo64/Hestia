@@ -1,6 +1,6 @@
 namespace Hestia;
 
-using Medo.Configuration;
+using Medo;
 
 internal static class Settings {
 

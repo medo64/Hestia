@@ -5,12 +5,12 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Threading.Tasks;
-using Medo.Configuration;
+using Medo;
 
 internal static class App {
 
     public static async Task Main(string[] args) {
-        Config.FileName = "/etc/hestia.conf";
+        Config.Initialize("/etc/hestia.conf");
 
         if (!string.IsNullOrEmpty(Settings.TmpUsbFile)) {
             Log.Info("Unlocking via TmpUsb");
