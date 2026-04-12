@@ -242,9 +242,10 @@ if [ "$PACKAGE_NUGET" != "" ]; then
 
     PACKAGE_NUGET_VERSION=`cat "$PACKAGE_NUGET_ENTRYPOINT" | grep "<Version>" | sed 's^</\?Version>^^g' | xargs`
     if [ "$PACKAGE_NUGET_VERSION" = "" ]; then
-        if [ "$PACKAGE_NUGET_VERSION" = "" ]; then
-            PACKAGE_NUGET_VERSION=0.0.0
-        fi
+        PACKAGE_NUGET_VERSION="$GIT_VERSION"
+    fi
+    if [ "$PACKAGE_NUGET_VERSION" = "" ]; then
+        PACKAGE_NUGET_VERSION=0.0.0
     fi
     echo "${ANSI_PURPLE}NuGET package version: ${ANSI_MAGENTA}$PACKAGE_NUGET_VERSION${ANSI_RESET}"
 
@@ -341,8 +342,7 @@ make_clean() {
     rmdir "$SCRIPT_DIR/build" 2>/dev/null || true
 
     find "$SCRIPT_DIR/src"      -type d \( -name "bin" -or -name "obj" \) -exec rm -rf "{}" + 2>/dev/null || true
-    find "$SCRIPT_DIR/tests"    -type d \( -name "bin" -or -name "obj" \) -exec rm -rf "{}" + 2>/dev/null || true
-    find "$SCRIPT_DIR/tests"    -type d -name "BenchmarkDotNet.Artifacts" -exec rm -rf "{}" + 2>/dev/null || true
+    find "$SCRIPT_DIR/tests"    -type d \( -name "bin" -or -name "obj" -or -name "BenchmarkDotNet.Artifacts" -or -name "TestResults" \) -exec rm -rf "{}" + 2>/dev/null || true
     find "$SCRIPT_DIR/examples" -type d \( -name "bin" -or -name "obj" \) -exec rm -rf "{}" + 2>/dev/null || true
     find "$SCRIPT_DIR/tools"    -type d \( -name "bin" -or -name "obj" \) -exec rm -rf "{}" + 2>/dev/null || true
 }
@@ -390,7 +390,7 @@ make_test() {
     ANYTHING_DONE=0
 
     for PROJECT_FILE in $(find "$SCRIPT_DIR/tests" -name "*.csproj"); do
-        IS_TEST=$(cat "$PROJECT_FILE" | grep -E "MSTest.Sdk" | wc -l)
+        IS_TEST=$(cat "$PROJECT_FILE" | grep -E 'MSTest\.Sdk|Microsoft\.NET\.Test\.Sdk' | wc -l)
         if [ $IS_TEST -eq 0 ]; then continue; fi
 
         ANYTHING_DONE=1
@@ -452,7 +452,7 @@ make_examples() {
 
     ANYTHING_DONE=0
 
-    for PROJECT_FILE in $(find "$SCRIPT_DIR/examples" -name "*.csproj"); do
+    for PROJECT_FILE in $(find "$SCRIPT_DIR/examples" -name "*.csproj" 2>/dev/null); do
         ANYTHING_DONE=1
 
         echo "${ANSI_MAGENTA}$(basename $PROJECT_FILE) ($(basename $(dirname $PROJECT_FILE)))${ANSI_RESET}"
@@ -477,7 +477,7 @@ make_tools() {
 
     ANYTHING_DONE=0
 
-    for PROJECT_FILE in $(find "$SCRIPT_DIR/tools" -name "*.csproj"); do
+    for PROJECT_FILE in $(find "$SCRIPT_DIR/tools" -name "*.csproj" 2>/dev/null); do
         ANYTHING_DONE=1
 
         echo "${ANSI_MAGENTA}$(basename $PROJECT_FILE) ($(basename $(dirname $PROJECT_FILE)))${ANSI_RESET}"
@@ -488,7 +488,7 @@ make_tools() {
     done
 
     if [ "$ANYTHING_DONE" -eq 0 ]; then
-        echo "${ANSI_RED}No example project found${ANSI_RESET}" >&2
+        echo "${ANSI_RED}No tools project found${ANSI_RESET}" >&2
         exit 113
     fi
 }
@@ -901,7 +901,13 @@ PREREQ_COMPILE=0
 PREREQ_PACKAGE=0
 for ACTION in $ACTIONS; do
     case $ACTION in
-        all)        TOKENS="$TOKENS clean release"                      ; PREREQ_COMPILE=1                    ;;
+        all)
+            TOKENS="$TOKENS clean release"
+            PREREQ_COMPILE=1
+            if [ -e "$SCRIPT_DIR/examples" ]; then TOKENS="$TOKENS examples"; fi
+            if [ -e "$SCRIPT_DIR/tests" ]; then TOKENS="$TOKENS test"; fi
+            if [ -e "$SCRIPT_DIR/tools" ]; then TOKENS="$TOKENS tools"; fi
+        ;;
         clean)      TOKENS="$TOKENS clean"                                                                    ;;
         run)        TOKENS="$TOKENS run"                                ; PREREQ_COMPILE=1                    ;;
         test)       TOKENS="$TOKENS clean test"                         ; PREREQ_COMPILE=1                    ;;
