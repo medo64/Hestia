@@ -100,4 +100,13 @@ internal class OutputStore : IDisposable {
 
     }
 
+
+    internal static string[] SplitStdOutIntoLines(Process process, OutputCopy? copy) {
+        return Helpers.SplitOutIntoLines((copy != null) ? copy.GetStdOut() : process.StandardOutput.ReadToEnd());
+    }
+
+    internal static string[] SplitStdErrIntoLines(Process process, OutputCopy? copy) {
+        return Helpers.SplitOutIntoLines((copy != null) ? copy.GetStdErr() : process.StandardError.ReadToEnd());
+    }
+
 }

@@ -17,11 +17,11 @@ internal static class DockerCommand {
         };
 
         process.Start();
-        output?.Attach(process);
+        var outCopy = output?.Attach(process);
         process.WaitForExit();
 
-        standardOutputLines = Helpers.SplitOutIntoLines(process.StandardOutput.ReadToEnd());
-        standardErrorLines = Helpers.SplitOutIntoLines(process.StandardError.ReadToEnd());
+        standardOutputLines = OutputStore.SplitStdOutIntoLines(process, outCopy);
+        standardErrorLines = OutputStore.SplitStdErrIntoLines(process, outCopy);
         return process.ExitCode;
     }
 
