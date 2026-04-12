@@ -10,9 +10,9 @@ using Medo;
 internal static class App {
 
     public static async Task Main(string[] args) {
-        Config.Initialize("/etc/hestia.conf");
+        Config.Initialize(null, "/etc/hestia.conf", null, null);
 
-        await Unlock();
+        Unlock();
 
         var listener = new HttpListener();
         listener.Prefixes.Add(Settings.ListenPrefix);
@@ -42,7 +42,7 @@ internal static class App {
         }
     }
 
-    private static async Task Unlock() {
+    private static void Unlock() {
         if (!string.IsNullOrEmpty(Settings.TmpUsbFile)) {
             Log.Info("Unlocking via TmpUsb");
             bool needsTmpUsbUnmount = false;
